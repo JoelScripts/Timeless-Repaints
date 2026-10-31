@@ -10,16 +10,9 @@
 <body>
 
   <!-- Auth guard: redirect to admin if already logged in -->
-  <script>
-    const TOKEN_KEY = 'tr_github_token';
-    const USER_KEY = 'tr_github_user';
-    const REPO_KEY = 'tr_github_repo';
-
-    const token = localStorage.getItem(TOKEN_KEY);
-    const user = localStorage.getItem(USER_KEY);
-    const repo = localStorage.getItem(REPO_KEY);
-
-    if (token && user && repo) {
+  <script type="module">
+    import { isAuthenticated } from './public/js/auth.js';
+    if (isAuthenticated()) {
       window.location.href = 'admin.html';
     }
   </script>
@@ -34,29 +27,18 @@
     <div class="container">
       <div class="admin-header" style="max-width: 500px; margin: 0 auto 3rem auto;">
         <h1>Admin Login</h1>
-        <p>Enter your GitHub credentials to access the livery upload area.</p>
+        <p>Enter your credentials to access the livery upload area.</p>
       </div>
 
-      <div class="admin-form" style="max-width: 500px; margin: 0 auto;">
+      <div class="admin-form" style="max-width: 400px; margin: 0 auto;">
         <div class="form-group">
-          <label for="githubUser">GitHub Username or Organization *</label>
-          <input type="text" id="githubUser" name="githubUser" placeholder="e.g. FlyingWithJoel" required>
+          <label for="username">Username *</label>
+          <input type="text" id="username" name="username" placeholder="Username" required autofocus>
         </div>
 
         <div class="form-group">
-          <label for="githubRepo">Repository Name *</label>
-          <input type="text" id="githubRepo" name="githubRepo" placeholder="e.g. Timeless-Repaints" required>
-        </div>
-
-        <div class="form-group">
-          <label for="githubToken">Personal Access Token *</label>
-          <input type="password" id="githubToken" name="githubToken" placeholder="ghp_xxxxxxxxxxxx" required>
-          <p class="form-hint">Create one at: github.com/settings/tokens (needs <code>repo</code> scope)</p>
-        </div>
-
-        <div class="form-group">
-          <label for="githubBranch">Branch</label>
-          <input type="text" id="githubBranch" name="githubBranch" placeholder="main" value="main">
+          <label for="password">Password *</label>
+          <input type="password" id="password" name="password" placeholder="Password" required>
         </div>
 
         <button type="button" id="loginBtn" class="btn btn-success btn-submit" style="width:100%;">Login</button>
@@ -65,13 +47,48 @@
       <div id="loginResult" style="margin-top: 1rem; text-align: center; min-height: 2rem;"></div>
 
       <div style="margin-top: 2rem; text-align: center; color: var(--text-dim); font-size: 0.9rem;">
-        <p>Your token is stored locally in your browser only. It is never sent to any server except GitHub's API.</p>
         <a href="index.html" style="color: var(--accent);">← Back to Site</a>
       </div>
     </div>
   </section>
 
-  <script type="module" src="public/js/auth.js"></script>
-  <script type="module" src="public/js/login.js"></script>
+  <script type="module">
+    import { setAuth, validateLogin, clearAuth } from './public/js/auth.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('loginBtn');
+      const result = document.getElementById('loginResult');
+
+      btn.addEventListener('click', () => {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!username || !password) {
+          showResult('Please enter both username and password.', 'error');
+          return;
+        }
+
+        if (validateLogin(username, password)) {
+          setAuth({ loggedIn: true, username });
+          showResult('Login successful! Redirecting...', 'success');
+          setTimeout(() => { window.location.href = 'admin.html'; }, 800);
+        } else {
+          showResult('Invalid username or password.', 'error');
+        }
+      });
+
+      // Allow Enter key to submit
+      document.getElementById('password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') btn.click();
+      });
+    });
+
+    function showResult(message, type = 'error') {
+      const result = document.getElementById('loginResult');
+      result.textContent = message;
+      result.style.color = type === 'success' ? 'var(--success)' : 'var(--error)';
+      result.style.fontWeight = '600';
+    }
+  </script>
 </body>
 </html>

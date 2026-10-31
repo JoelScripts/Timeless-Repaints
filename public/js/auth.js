@@ -3,26 +3,35 @@
    ======================================== */
 
 const STORAGE_KEYS = {
+  loggedIn: 'tr_logged_in',
+  username: 'tr_username',
   token: 'tr_github_token',
   user: 'tr_github_user',
   repo: 'tr_github_repo',
   branch: 'tr_github_branch'
 };
 
+const VALID_USERNAME = 'Brit';
+const VALID_PASSWORD = 'Timeless';
+
 export function getAuth() {
   return {
+    loggedIn: localStorage.getItem(STORAGE_KEYS.loggedIn) === 'true',
+    username: localStorage.getItem(STORAGE_KEYS.username),
     token: localStorage.getItem(STORAGE_KEYS.token),
-    user: localStorage.getItem(STORAGE_KEYS.user),
-    repo: localStorage.getItem(STORAGE_KEYS.repo),
+    githubUser: localStorage.getItem(STORAGE_KEYS.user),
+    githubRepo: localStorage.getItem(STORAGE_KEYS.repo),
     branch: localStorage.getItem(STORAGE_KEYS.branch) || 'main'
   };
 }
 
-export function setAuth({ token, user, repo, branch = 'main' }) {
-  localStorage.setItem(STORAGE_KEYS.token, token);
-  localStorage.setItem(STORAGE_KEYS.user, user);
-  localStorage.setItem(STORAGE_KEYS.repo, repo);
-  localStorage.setItem(STORAGE_KEYS.branch, branch);
+export function setAuth(auth) {
+  if (auth.loggedIn !== undefined) localStorage.setItem(STORAGE_KEYS.loggedIn, auth.loggedIn ? 'true' : 'false');
+  if (auth.username) localStorage.setItem(STORAGE_KEYS.username, auth.username);
+  if (auth.token) localStorage.setItem(STORAGE_KEYS.token, auth.token);
+  if (auth.githubUser) localStorage.setItem(STORAGE_KEYS.user, auth.githubUser);
+  if (auth.githubRepo) localStorage.setItem(STORAGE_KEYS.repo, auth.githubRepo);
+  if (auth.branch) localStorage.setItem(STORAGE_KEYS.branch, auth.branch);
 }
 
 export function clearAuth() {
@@ -30,7 +39,11 @@ export function clearAuth() {
 }
 
 export function isAuthenticated() {
-  return !!localStorage.getItem(STORAGE_KEYS.token);
+  return localStorage.getItem(STORAGE_KEYS.loggedIn) === 'true';
+}
+
+export function validateLogin(username, password) {
+  return username === VALID_USERNAME && password === VALID_PASSWORD;
 }
 
 export function apiHeaders(token) {

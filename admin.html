@@ -6,27 +6,13 @@
   <title>Timeless Repaints Admin | Upload Livery</title>
   <link rel="stylesheet" href="public/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    #auth-blocked { display: none; }
-  </style>
 </head>
 <body>
 
-  <!-- Auth guard: redirects to login if not authenticated -->
-  <script>
-    // Check auth immediately before rendering anything
-    const TOKEN_KEY = 'tr_github_token';
-    const USER_KEY = 'tr_github_user';
-    const REPO_KEY = 'tr_github_repo';
-    const BRANCH_KEY = 'tr_github_branch';
-
-    const token = localStorage.getItem(TOKEN_KEY);
-    const user = localStorage.getItem(USER_KEY);
-    const repo = localStorage.getItem(REPO_KEY);
-    const branch = localStorage.getItem(BRANCH_KEY) || 'main';
-
-    if (!token || !user || !repo) {
-      // Not logged in - redirect to login page
+  <!-- Auth guard: redirect to login if not authenticated -->
+  <script type="module">
+    import { isAuthenticated } from './public/js/auth.js';
+    if (!isAuthenticated()) {
       window.location.href = 'login.html';
     }
   </script>
@@ -48,11 +34,35 @@
         <p>Upload a new livery. It will be pushed directly to GitHub and appear on the site after GitHub Pages rebuilds (usually under a minute).</p>
       </div>
 
+      <!-- GitHub connection settings -->
       <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
-        <p style="color: var(--text-dim); font-size: 0.9rem; margin: 0;">
-          <strong>Connected as:</strong> <span id="authUser"></span> /
-          <span id="authRepo"></span> (branch: <span id="authBranch"></span>)
+        <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; color: var(--accent);">GitHub Connection</h3>
+        <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem;">
+          <strong>Logged in as:</strong> <span id="authUser"></span>
         </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="githubToken">GitHub Personal Access Token *</label>
+            <input type="password" id="githubToken" name="githubToken" placeholder="ghp_xxxxxxxxxxxx" value="">
+            <p class="form-hint">Create one at: github.com/settings/tokens (needs repo scope)</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="githubUser">GitHub Username / Org *</label>
+            <input type="text" id="githubUser" name="githubUser" placeholder="e.g. FlyingWithJoel" value="">
+          </div>
+          <div class="form-group">
+            <label for="githubRepo">Repository Name *</label>
+            <input type="text" id="githubRepo" name="githubRepo" placeholder="Timeless-Repaints" value="Timeless-Repaints">
+          </div>
+          <div class="form-group">
+            <label for="githubBranch">Branch</label>
+            <input type="text" id="githubBranch" name="githubBranch" placeholder="main" value="main">
+          </div>
+        </div>
+        <button type="button" id="saveGitHubBtn" class="btn btn-primary" style="margin-top: 0.5rem;">Save GitHub Settings</button>
+        <div id="githubStatus" style="margin-top: 0.75rem; font-size: 0.85rem;"></div>
       </div>
 
       <form id="liveryForm" class="admin-form">
@@ -123,18 +133,39 @@
   </section>
 
   <script type="module">
-    import { getAuth, clearAuth, isAuthenticated } from './public/js/auth.js';
+    import { getAuth, clearAuth, setAuth, apiHeaders, apiBase } from './public/js/auth.js';
     import { loadLiveriesFromGitHub, uploadFile, saveLiveriesToGitHub } from './public/js/github.js';
 
     const auth = getAuth();
-    document.getElementById('authUser').textContent = auth.user;
-    document.getElementById('authRepo').textContent = auth.repo;
-    document.getElementById('authBranch').textContent = auth.branch;
+
+    // Check if GitHub settings are configured
+    if (!auth.token || !auth.githubUser || !auth.githubRepo) {
+      document.getElementById('githubStatus').innerHTML = '<p style="color: var(--error);">⚠ Please save your GitHub settings before uploading.</p>';
+    }
+
+    document.getElementById('authUser').textContent = auth.username || 'Admin';
+
+    // Prefill GitHub settings if saved
+    if (auth.token) document.getElementById('githubToken').value = auth.token;
+    if (auth.githubUser) document.getElementById('githubUser').value = auth.githubUser;
+    if (auth.githubRepo) document.getElementById('githubRepo').value = auth.githubRepo;
+    if (auth.branch) document.getElementById('githubBranch').value = auth.branch;
 
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
       clearAuth();
       window.location.href = 'login.html';
+    });
+
+    // Save GitHub settings
+    document.getElementById('saveGitHubBtn').addEventListener('click', () => {
+      const token = document.getElementById('githubToken').value.trim();
+      const user = document.getElementById('githubUser').value.trim();
+      const repo = document.getElementById('githubRepo').value.trim();
+      const branch = document.getElementById('githubBranch').value.trim() || 'main';
+
+      setAuth({ token, githubUser: user, githubRepo: repo, branch });
+      document.getElementById('githubStatus').innerHTML = '<p style="color: var(--success);">✓ GitHub settings saved.</p>';
     });
 
     const form = document.getElementById('liveryForm');
@@ -157,7 +188,7 @@
         const liveries = await loadLiveriesFromGitHub();
         renderExisting(liveries);
       } catch (err) {
-        existingList.innerHTML = '<p style="color: var(--error);">Failed to load existing liveries.</p>';
+        existingList.innerHTML = '<p style="color: var(--error);">Failed to load existing liveries. Check GitHub settings.</p>';
         console.error(err);
       }
     }
@@ -209,6 +240,19 @@
     // Form submit
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      const token = document.getElementById('githubToken').value.trim();
+      const githubUser = document.getElementById('githubUser').value.trim();
+      const githubRepo = document.getElementById('githubRepo').value.trim();
+      const branch = document.getElementById('githubBranch').value.trim() || 'main';
+
+      if (!token || !githubUser || !githubRepo) {
+        showResult('Please save your GitHub settings first.', 'error');
+        return;
+      }
+
+      // Temporarily set auth for this session
+      setAuth({ token, githubUser, githubRepo, branch });
 
       const title = document.getElementById('title').value.trim();
       const simulator = document.getElementById('simulator').value;
@@ -281,7 +325,7 @@
 
       } catch (err) {
         console.error(err);
-        showResult(err.message || 'Upload failed. Check your token and repository settings.', 'error');
+        showResult(err.message || 'Upload failed. Check your GitHub token and repository settings.', 'error');
       } finally {
         btn.textContent = originalText;
         btn.disabled = false;
