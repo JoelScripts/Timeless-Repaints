@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timeless Repaints | MSFS2024 & X-Plane 12 Liveries</title>
+  <link rel="stylesheet" href="public/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="#" class="nav-logo" id="navLogo">TIMELESS<span>REPAINTS</span></a>
+      <ul class="nav-links">
+        <li><a href="#" class="nav-link" data-page="home">Home</a></li>
+        <li><a href="#" class="nav-link" data-page="gallery">Gallery</a></li>
+      </ul>
+      <div class="nav-toggle" id="navToggle">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </nav>
+
+  <main id="app">
+
+    <!-- Home -->
+    <section id="page-home" class="page active">
+      <div class="hero">
+        <div class="hero-content">
+          <img src="public/assets/logo.png" alt="Timeless Repaints Logo" class="hero-logo"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="hero-logo-fallback">
+            <span class="fallback-text">TIMELESS</span>
+            <span class="fallback-sub">REPAINTS</span>
+          </div>
+          <h1 class="hero-title">Flight Sim Liveries<br><span class="highlight">Made Timeless</span></h1>
+          <p class="hero-sub">High-quality repaints for Microsoft Flight Simulator 2024 and X-Plane 12.</p>
+          <div class="hero-actions">
+            <a href="#gallery" class="btn btn-primary">Browse Liveries</a>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="sim-badge msfs">MSFS 2024</div>
+          <div class="sim-badge xplane">X-Plane 12</div>
+        </div>
+      </div>
+
+      <section class="categories" id="gallery">
+        <div class="container">
+          <h2 class="section-title">Choose Your Simulator</h2>
+          <div class="category-grid">
+            <div class="category-card" data-sim="msfs">
+              <div class="category-icon">&#128640;</div>
+              <h3>Microsoft Flight Simulator 2024</h3>
+              <p class="count" id="count-msfs">0 liveries</p>
+            </div>
+            <div class="category-card" data-sim="xplane">
+              <div class="category-icon">&#9992;</div>
+              <h3>X-Plane 12</h3>
+              <p class="count" id="count-xplane">0 liveries</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="featured">
+        <div class="container">
+          <h2 class="section-title">Featured Repaints</h2>
+          <div class="livery-grid" id="featuredGrid"></div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Gallery -->
+    <section id="page-gallery" class="page">
+      <div class="container">
+        <div class="page-header">
+          <h2 class="section-title">Livery Gallery</h2>
+        </div>
+
+        <div class="gallery-controls">
+          <select id="filterSim" class="filter-select">
+            <option value="all">All Simulators</option>
+            <option value="msfs">Microsoft Flight Simulator 2024</option>
+            <option value="xplane">X-Plane 12</option>
+          </select>
+          <select id="sortGallery" class="filter-select">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="downloads">Most Downloads</option>
+          </select>
+        </div>
+
+        <div class="livery-grid" id="galleryGrid"></div>
+        <div id="galleryEmpty" class="empty-state" style="display:none;">
+          <p>No liveries found.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Livery Detail Modal -->
+  <div id="liveryModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose">&times;</button>
+      <div class="modal-body">
+        <div class="modal-header">
+          <h2 id="modalTitle">Livery Title</h2>
+          <span id="modalSimBadge" class="sim-badge-inline">MSFS</span>
+        </div>
+        <img id="modalImage" src="" alt="Livery preview" class="modal-image">
+        <div class="modal-details">
+          <p><strong>Aircraft:</strong> <span id="modalAircraft"></span></p>
+          <p><strong>Version:</strong> <span id="modalVersion"></span></p>
+          <p><strong>Author:</strong> <span id="modalAuthor"></span></p>
+          <p><strong>Downloads:</strong> <span id="modalDownloads">0</span></p>
+          <p id="modalDescription"></p>
+        </div>
+        <div class="modal-actions">
+          <a id="modalDownload" class="btn btn-primary" target="_blank">Download Livery</a>
+          <button class="btn btn-outline" id="modalCloseBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script src="public/js/app.js"></script>
+</body>
+</html>

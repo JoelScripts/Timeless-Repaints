@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timeless Repaints Admin | Upload Livery</title>
+  <link rel="stylesheet" href="public/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">TIMELESS<span>REPAINTS</span></a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Back to Site</a></li>
+        <li><button id="logoutBtn" class="nav-link btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Logout</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="admin-page">
+    <div class="container">
+      <div class="admin-header">
+        <h1>Admin Upload</h1>
+        <p>Upload a new livery. It will be pushed directly to GitHub and appear on the site after GitHub Pages rebuilds (usually under a minute).</p>
+      </div>
+
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+        <p style="color: var(--text-dim); font-size: 0.9rem; margin: 0;">
+          <strong>Connected as:</strong> <span id="authUser"></span> /
+          <span id="authRepo"></span> (branch: <span id="authBranch"></span>)
+        </p>
+      </div>
+
+      <form id="liveryForm" class="admin-form">
+        <div class="form-group">
+          <label for="title">Livery Title *</label>
+          <input type="text" id="title" name="title" placeholder="e.g. United Airlines Retro 1970s" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="simulator">Simulator *</label>
+            <select id="simulator" name="simulator" required>
+              <option value="">Select simulator</option>
+              <option value="msfs">Microsoft Flight Simulator 2024</option>
+              <option value="xplane">X-Plane 12</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="aircraft">Aircraft *</label>
+            <input type="text" id="aircraft" name="aircraft" placeholder="e.g. Boeing 737-800" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="version">Version</label>
+            <input type="text" id="version" name="version" placeholder="1.0" value="1.0">
+          </div>
+          <div class="form-group">
+            <label for="author">Author</label>
+            <input type="text" id="author" name="author" placeholder="Your name" value="Timeless Repaints">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" rows="4" placeholder="Tell us about this livery..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="file-label">Livery File *</label>
+          <div class="file-input-group">
+            <span class="browse-btn">Choose File</span>
+            <input type="file" id="file" name="file" accept=".zip,.rar,.7z,.pdf,.png,.jpg,.jpeg" required>
+            <p class="form-hint">Max 25MB recommended for GitHub. ZIP/RAR/7Z recommended for livery packages.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="file-label">Thumbnail Image (optional)</label>
+          <div class="file-input-group">
+            <span class="browse-btn">Choose Image</span>
+            <input type="file" id="thumbnail" name="thumbnail" accept="image/*">
+            <p class="form-hint">Preview image shown in the gallery.</p>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-success btn-submit">Upload to GitHub</button>
+      </form>
+
+      <div id="formResult" class="form-result" style="display:none;"></div>
+
+      <div class="liveries-list" style="margin-top:3rem;">
+        <h2 class="section-title" style="text-align:left;">Existing Liveries</h2>
+        <div id="existingList">Loading...</div>
+      </div>
+    </div>
+  </section>
+
+  <script type="module">
+    import { getAuth, clearAuth, isAuthenticated } from './public/js/auth.js';
+    import { loadLiveriesFromGitHub, uploadFile, saveLiveriesToGitHub } from './public/js/github.js';
+
+    // Auth check
+    if (!isAuthenticated()) {
+      window.location.href = 'login.html';
+    }
+
+    const auth = getAuth();
+    document.getElementById('authUser').textContent = auth.user;
+    document.getElementById('authRepo').textContent = auth.repo;
+    document.getElementById('authBranch').textContent = auth.branch;
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      clearAuth();
+      window.location.href = 'login.html';
+    });
+
+    const form = document.getElementById('liveryForm');
+    const result = document.getElementById('formResult');
+    const existingList = document.getElementById('existingList');
+
+    let newFiles = {};
+
+    // File inputs
+    document.getElementById('file').addEventListener('change', (e) => {
+      if (e.target.files[0]) newFiles.file = e.target.files[0];
+    });
+    document.getElementById('thumbnail').addEventListener('change', (e) => {
+      if (e.target.files[0]) newFiles.thumbnail = e.target.files[0];
+    });
+
+    // Load existing liveries
+    async function loadExisting() {
+      try {
+        const liveries = await loadLiveriesFromGitHub();
+        renderExisting(liveries);
+      } catch (err) {
+        existingList.innerHTML = '<p style="color: var(--error);">Failed to load existing liveries.</p>';
+        console.error(err);
+      }
+    }
+
+    function renderExisting(liveries) {
+      if (!liveries || liveries.length === 0) {
+        existingList.innerHTML = '<p style="color: var(--text-dim);">No liveries yet.</p>';
+        return;
+      }
+      const sorted = [...liveries].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      existingList.innerHTML = sorted.map(livery => {
+        const sim = livery.simulator === 'xplane' ? 'xplane' : 'msfs';
+        const simLabel = sim === 'xplane' ? 'X-Plane 12' : 'MSFS 2024';
+        return `
+          <div class="livery-row">
+            <div class="livery-row-info">
+              <h4>${escapeHtml(livery.title)}</h4>
+              <p><span class="sim-badge-inline ${sim}">${simLabel}</span> • ${escapeHtml(livery.aircraft || '')} • v${escapeHtml(livery.version || '1.0')}</p>
+              <p>Author: ${escapeHtml(livery.author || '')}</p>
+              <p><small>${escapeHtml(livery.filename || '')}</small></p>
+            </div>
+            <div class="livery-row-actions">
+              <a href="${escapeHtml(livery.filename)}" class="btn btn-outline" target="_blank" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Download</a>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function showResult(message, type = 'success') {
+      result.textContent = message;
+      result.style.display = 'block';
+      result.style.background = type === 'success' ? 'rgba(0, 255, 136, 0.15)' : 'rgba(255, 68, 68, 0.15)';
+      result.style.color = type === 'success' ? 'var(--success)' : 'var(--error)';
+      result.style.border = `1px solid ${type === 'success' ? 'var(--success)' : 'var(--error)'}`;
+      result.style.padding = '1rem';
+      result.style.borderRadius = '8px';
+      result.style.marginTop = '1rem';
+      setTimeout(() => { result.style.display = 'none'; }, 8000);
+    }
+
+    // Form submit
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById('title').value.trim();
+      const simulator = document.getElementById('simulator').value;
+      const aircraft = document.getElementById('aircraft').value.trim();
+      const version = document.getElementById('version').value.trim() || '1.0';
+      const author = document.getElementById('author').value.trim() || 'Timeless Repaints';
+      const description = document.getElementById('description').value.trim();
+
+      if (!title || !simulator || !aircraft || !newFiles.file) {
+        showResult('Please fill all required fields and select a livery file.', 'error');
+        return;
+      }
+
+      const btn = form.querySelector('button[type="submit"]');
+      const originalText = btn.textContent;
+      btn.textContent = 'Uploading to GitHub...';
+      btn.disabled = true;
+
+      try {
+        // Sanitize filename
+        const safeTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        const fileExt = newFiles.file.name.split('.').pop().toLowerCase();
+        const fileName = `${safeTitle}.${fileExt}`;
+        const filePath = `public/uploads/${fileName}`;
+
+        let thumbPath = null;
+        if (newFiles.thumbnail) {
+          const thumbExt = newFiles.thumbnail.name.split('.').pop().toLowerCase();
+          const thumbName = `${safeTitle}-thumb.${thumbExt}`;
+          thumbPath = `public/uploads/${thumbName}`;
+        }
+
+        // 1. Upload livery file
+        await uploadFile(newFiles.file, filePath, `Add livery: ${title}`);
+
+        // 2. Upload thumbnail if provided
+        if (newFiles.thumbnail && thumbPath) {
+          await uploadFile(newFiles.thumbnail, thumbPath, `Add thumbnail: ${title}`);
+        }
+
+        // 3. Load current liveries.json, append new entry, save
+        const liveries = await loadLiveriesFromGitHub();
+        const newEntry = {
+          id: Date.now().toString(),
+          title,
+          description,
+          simulator,
+          aircraft,
+          version,
+          author,
+          filename: filePath,
+          thumbnail: thumbPath,
+          fileSize: newFiles.file.size,
+          downloads: 0,
+          createdAt: new Date().toISOString()
+        };
+        liveries.push(newEntry);
+        await saveLiveriesToGitHub(liveries);
+
+        // Success
+        form.reset();
+        document.getElementById('version').value = '1.0';
+        document.getElementById('author').value = 'Timeless Repaints';
+        document.getElementById('file').value = '';
+        document.getElementById('thumbnail').value = '';
+        newFiles = {};
+
+        showResult(`"${escapeHtml(title)}" uploaded successfully! It will appear on the site after GitHub Pages rebuilds (usually under a minute).`, 'success');
+        loadExisting();
+
+      } catch (err) {
+        console.error(err);
+        showResult(err.message || 'Upload failed. Check your token and repository settings.', 'error');
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    loadExisting();
+  </script>
+</body>
+</html>
