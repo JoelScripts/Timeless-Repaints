@@ -6,8 +6,30 @@
   <title>Timeless Repaints Admin | Upload Livery</title>
   <link rel="stylesheet" href="public/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    #auth-blocked { display: none; }
+  </style>
 </head>
 <body>
+
+  <!-- Auth guard: redirects to login if not authenticated -->
+  <script>
+    // Check auth immediately before rendering anything
+    const TOKEN_KEY = 'tr_github_token';
+    const USER_KEY = 'tr_github_user';
+    const REPO_KEY = 'tr_github_repo';
+    const BRANCH_KEY = 'tr_github_branch';
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    const user = localStorage.getItem(USER_KEY);
+    const repo = localStorage.getItem(REPO_KEY);
+    const branch = localStorage.getItem(BRANCH_KEY) || 'main';
+
+    if (!token || !user || !repo) {
+      // Not logged in - redirect to login page
+      window.location.href = 'login.html';
+    }
+  </script>
 
   <nav class="navbar">
     <div class="nav-container">
@@ -103,11 +125,6 @@
   <script type="module">
     import { getAuth, clearAuth, isAuthenticated } from './public/js/auth.js';
     import { loadLiveriesFromGitHub, uploadFile, saveLiveriesToGitHub } from './public/js/github.js';
-
-    // Auth check
-    if (!isAuthenticated()) {
-      window.location.href = 'login.html';
-    }
 
     const auth = getAuth();
     document.getElementById('authUser').textContent = auth.user;

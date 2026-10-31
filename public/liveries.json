@@ -7,8 +7,8 @@
     "aircraft": "Boeing 737-800",
     "version": "1.0",
     "author": "Timeless Repaints",
-    "filename": "uploads/united-retro-1970s.zip",
-    "thumbnail": "uploads/united-retro-1970s-thumb.jpg",
+    "filename": "public/uploads/united-retro-1970s.zip",
+    "thumbnail": "public/uploads/united-retro-1970s-thumb.jpg",
     "fileSize": 12500000,
     "downloads": 0,
     "createdAt": "2026-01-15T10:00:00Z"
@@ -21,8 +21,8 @@
     "aircraft": "Airbus A320",
     "version": "1.1",
     "author": "Timeless Repaints",
-    "filename": "uploads/ba-speedmarque.zip",
-    "thumbnail": "uploads/ba-speedmarque-thumb.jpg",
+    "filename": "public/uploads/ba-speedmarque.zip",
+    "thumbnail": "public/uploads/ba-speedmarque-thumb.jpg",
     "fileSize": 15200000,
     "downloads": 0,
     "createdAt": "2026-02-20T14:30:00Z"

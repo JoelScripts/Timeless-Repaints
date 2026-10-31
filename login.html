@@ -9,6 +9,21 @@
 </head>
 <body>
 
+  <!-- Auth guard: redirect to admin if already logged in -->
+  <script>
+    const TOKEN_KEY = 'tr_github_token';
+    const USER_KEY = 'tr_github_user';
+    const REPO_KEY = 'tr_github_repo';
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    const user = localStorage.getItem(USER_KEY);
+    const repo = localStorage.getItem(REPO_KEY);
+
+    if (token && user && repo) {
+      window.location.href = 'admin.html';
+    }
+  </script>
+
   <nav class="navbar">
     <div class="nav-container">
       <a href="index.html" class="nav-logo">TIMELESS<span>REPAINTS</span></a>
@@ -56,7 +71,7 @@
     </div>
   </section>
 
-  <script src="public/js/auth.js"></script>
-  <script src="public/js/login.js"></script>
+  <script type="module" src="public/js/auth.js"></script>
+  <script type="module" src="public/js/login.js"></script>
 </body>
 </html>
